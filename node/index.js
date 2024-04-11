@@ -11,17 +11,18 @@ const config = {
 
 const connection = mysql.createConnection(config)
 
-const sql = "INSERT INTO names(name) values('Raimundo')"
-connection.query(sql)
-const get_names_sql = "SELECT * FROM names"
+const get_names_sql = "SELECT * FROM people"
 let names = ""
 connection.query(get_names_sql, (err , result) => {
-    handleNames(Object.values(JSON.parse(JSON.stringify(result))))
+    console.log(err, result)
+    if (result) {
+        handleNames(Object.values(JSON.parse(JSON.stringify(result))))
+    }
     send()
 })
-connection.end()
 
 function handleNames(result) {
+    names = ""
     result.forEach( ({ id, name}) => {
         names += `<li>${name}</li>`
     })
@@ -36,9 +37,26 @@ function send() {
                         ${names}
                     </ol>
                     `)
+        insert()
     })
 }
 
+function insert() {
+    const sql = "INSERT INTO people(name) values('Raimundo')"
+    connection.query(sql)
+    connection.query(get_names_sql, (err , result) => {
+        console.log(err, result)
+        if (result) {
+            handleNames(Object.values(JSON.parse(JSON.stringify(result))))
+        }
+    })
+}
+
+app.get("/health", (req, res) => {
+    res.send(`
+                <h1>Heath!</h1>
+                `)
+})
 
 app.listen(port, () => {
     console.log(`running, port: ${port}`)

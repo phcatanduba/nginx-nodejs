@@ -13,6 +13,9 @@ services:
     tty: true
     ports:
       - "8080:80"
+    depends_on:
+      app:
+        condition: service_healthy
 
   app:
     build:
@@ -24,22 +27,37 @@ services:
       - ./node:/usr/src/app
     tty: true
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:3000/health || exit 1
+      interval: 5s
+      retries: 5
+      timeout: 10s
 
   db:
     platform: linux/x86_64
     image: mysql:5.7
-    command: --innodb-use-native-aio=0
+    volumes:
+      - .docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: 
+      - --init-file
+      - /docker-entrypoint-initdb.d/init.sql
+      - --innodb-use-native-aio=0
     container_name: db
     restart: always
     tty: true
-    volumes: 
-      - ./mysql:/var/lib/mysql
     environment:
       - MYSQL_DATABASE=nodedb
       - MYSQL_ROOT_PASSWORD=root
     networks:
       - node-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
 
 networks:
   node-network: 
