@@ -26,6 +26,7 @@ services:
     volumes:
       - ./node:/usr/src/app
     tty: true
+    command: ["sh", "-c", "npm install && node index.js"]
     depends_on:
       db:
         condition: service_healthy
